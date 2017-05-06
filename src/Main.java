@@ -18,9 +18,13 @@ public class Main {
     public static String TOUR = "T";
     public static String FOU = "F";
     
-    public static String INDEPENDANCE = "i";
-    public static String DOMINATION = "d";
-    public static Model model = new Model("my first problem");
+    public static String INDEPENDANCE = "-i";
+    public static String DOMINATION = "-d";
+    public static String SIZE = "-n";
+    public static String argCAVALIER = "-c";
+    public static String argTOUR = "-t";
+    public static String argFOU = "-f";
+    public static Model model = new Model("ProblèmePremièrePartie");
     
     public static int nbDeplacementCavalier = 8;
     
@@ -29,19 +33,19 @@ public class Main {
     	String chosen = "notOK";
     	int index;
     	try{
-    		index = findInStringArray(args, "-d");
+    		index = findInStringArray(args, DOMINATION);
     		if (index == 100) {
-    			index = findInStringArray(args, "-i");
+    			index = findInStringArray(args, INDEPENDANCE);
     		}
     		chosen = args[index];
-    		index = findInStringArray(args, "-n");
+    		index = findInStringArray(args, SIZE);
     		size = Integer.parseInt(args[index+1]);
     		totalPosition = size*size;
-    		index = findInStringArray(args, "-t");
+    		index = findInStringArray(args, argTOUR);
     		totalTour = Integer.parseInt(args[index+1]);
-    		index = findInStringArray(args, "-c");
+    		index = findInStringArray(args, argCAVALIER);
     		totalCavalier = Integer.parseInt(args[index+1]);
-    		index = findInStringArray(args, "-f");
+    		index = findInStringArray(args, argFOU);
     		totalFou = Integer.parseInt(args[index+1]);
     	}
     	catch (Exception e) {
@@ -49,19 +53,18 @@ public class Main {
     		System.exit(1);
     	}
 		
-        if (chosen == INDEPENDANCE) {
+        if (chosen.equals(INDEPENDANCE)) {
         	doIndependance();
         }
-        else if (chosen == DOMINATION) {
+        else if (chosen.equals(DOMINATION)) {
         	doDomination();
         }
         else {
-        	System.out.println("Problèmes dans les arguments");
+        	System.out.println("Veuillez spécifiez le type d'exécution ( -i ) pour INDEPENDANCE et ( -d ) pour DOMINATION.");
         }
 }
     
     public static void doDomination() {
-    	int totalPiece = totalTour + totalFou + totalCavalier;
     	// A METTRE A JOUR
         // 2. Create variables
 		int[] deplacementPossibleCavalierI = new int[nbDeplacementCavalier+1]; // +1 car il reste sur place
@@ -461,7 +464,7 @@ public class Main {
     	boolean notFound = true;
     	int i=0;
     	while (notFound && i<array.length) {
-    		if (array[i] == value) {
+    		if (array[i].equals(value)) {
     			notFound = false;
     		}
     		else {
@@ -480,73 +483,3 @@ public class Main {
     				// Fin d'affichage de la matrice
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-
-
-/*
- *     			//On a plus que 1 truc
-    			//On fait la même pour les 2 autres pieces
-    			//On fait un OR des 3 trucs
-    			
-				tour contrainte == i,j
-						or
-        		fou contrainte == i,j
-        				or
-        		cavalier contrainte == i,j
- */
-
-
-/*
-// 2. Create variables
-IntVar[] cavalierI = new IntVar[totalCavalier];
-IntVar[] cavalierJ = new IntVar[totalCavalier];
-for (int i = 0; i < totalCavalier; i++) {
-	cavalierI[i] = model.intVar(0, size-1);
-	cavalierJ[i] = model.intVar(0, size-1);
-}
-IntVar[] fouI = new IntVar[totalFou];
-IntVar[] fouJ = new IntVar[totalFou];
-for (int i = 0; i < totalFou; i++) {
-	fouI[i] = model.intVar(0, size-1);
-	fouJ[i] = model.intVar(0, size-1);
-}
-IntVar[] tourI = new IntVar[totalTour];
-IntVar[] tourJ = new IntVar[totalTour];
-for (int i = 0; i < totalTour; i++) {
-	tourI[i] = model.intVar(0, size-1);
-	tourJ[i] = model.intVar(0, size-1);
-}
-
-IntVar[] matrixI = new IntVar[size];
-IntVar[] matrixJ = new IntVar[size];
-for (int i = 0; i < size; i++) {
-	matrixI[i] = model.intVar(0, size-1);
-	matrixJ[i] = model.intVar(0, size-1);
-}
-
-ArrayList<Constraint> constraintTour = new ArrayList<Constraint>();
-ArrayList<Constraint> allConstraint = new ArrayList<Constraint>();
-
-// Superposition de Tour
-for (int i=0; i<totalTour; ++i) {
-	for (int j=i+1;j<totalTour;++j) {
-		model.or(model.arithm(tourI[i] ,"!=", tourI[j]), model.arithm(tourJ[i], "!=", tourJ[j])).post();
-	}
-}
-
-for (int k=0; k<size; ++k) {
-	for (int l=0; l<size; ++l) {
-		for (int m=0;m<totalTour;++m) {
-			constraintTour.add(model.or(model.arithm(tourI[m], "=", k), model.arithm(tourJ[m], "=", l)));
-		}
-		
-	}
-}
-int second = 1;
-Constraint X = constraintTour.get(0);
-while (second < constraintTour.size()) {
-	X = model.and(X,constraintTour.get(second));
-	second+=1;
-}
-allConstraint.add(X);
-X.post();
-*/
