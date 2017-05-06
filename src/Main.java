@@ -22,6 +22,14 @@ public class Main {
     public static void main(String[] args) {
         Model model = new Model("my first problem");
 		
+
+}
+
+	
+    
+    public void indepedence() {
+        Model model = new Model("my first problem");
+
         // 2. Create variables
         IntVar[] cavalierI = new IntVar[totalCavalier];
         IntVar[] cavalierJ = new IntVar[totalCavalier];
@@ -140,9 +148,9 @@ public class Main {
 			printMatrix(cavalierI, cavalierJ, fouI, fouJ, tourI, tourJ);
 		}
 		System.out.println("Stop");
-}
 
-	
+    }
+    
 	/**
 	 * Surement possible de faire plus efficace
 	 * Pour les conversions entre INT[], ArrayList et IntVar;
