@@ -9,13 +9,15 @@ public class Main {
 	// 1. Create a Model
     public static int size = 3;
     public static int totalPosition = size*size;
-    public static int totalTour = 2;
-    public static int totalFou = 0;
-    public static int totalCavalier = 0;
+    public static int totalTour = 1;
+    public static int totalFou = 1;
+    public static int totalCavalier = 1;
     
     public static String CAVALIER = "C";
     public static String TOUR = "T";
     public static String FOU = "F";
+    
+    public static int nbDeplacementCavalier = 8;
     
     public static void main(String[] args) {
         Model model = new Model("my first problem");
@@ -81,7 +83,6 @@ public class Main {
 				}
 			}
 			for (int l=0;l<totalCavalier;++l) {
-				model.and(model.arithm(fouI[k], "!=", cavalierI[l]), model.arithm(fouJ[k], "!=", cavalierJ[l])).post();
 				for (int deplacementFou : movement) {
 					model.or(model.arithm(fouI[k], "-", cavalierI[l], "!=", deplacementFou), model.arithm(fouJ[k], "-", cavalierJ[l], "!=", deplacementFou)).post();
 					model.or(model.arithm(fouI[k], "-", cavalierI[l], "!=", deplacementFou), model.arithm(fouJ[k], "-", cavalierJ[l], "!=", -deplacementFou)).post();
@@ -89,6 +90,49 @@ public class Main {
 					model.or(model.arithm(fouI[k], "-", cavalierI[l], "!=", -deplacementFou), model.arithm(fouJ[k], "-", cavalierJ[l], "!=", -deplacementFou)).post();
 				}
 			}
+		}
+		
+		
+		int[] deplacementPossibleCavalierI = new int[nbDeplacementCavalier+1]; // +1 car il reste sur place
+		int[] deplacementPossibleCavalierJ = new int[nbDeplacementCavalier+1];
+		
+		deplacementPossibleCavalierI[0] = -2;
+		deplacementPossibleCavalierI[1] = -2;
+		deplacementPossibleCavalierI[2] = -1;
+		deplacementPossibleCavalierI[3] = 1;
+		deplacementPossibleCavalierI[4] = 2;
+		deplacementPossibleCavalierI[5] = 2;
+		deplacementPossibleCavalierI[6] = 1;
+		deplacementPossibleCavalierI[7] = -1;
+		deplacementPossibleCavalierI[8] = 0;
+		deplacementPossibleCavalierJ[0] = -1;
+		deplacementPossibleCavalierJ[1] = 1;
+		deplacementPossibleCavalierJ[2] = 2;
+		deplacementPossibleCavalierJ[3] = 2;
+		deplacementPossibleCavalierJ[4] = 1;
+		deplacementPossibleCavalierJ[5] = -1;
+		deplacementPossibleCavalierJ[6] = -2;
+		deplacementPossibleCavalierJ[7] = -2;
+		deplacementPossibleCavalierJ[8] = 0;
+		
+		for (int k=0; k<totalCavalier;++k) {
+			for (int l=0;l<totalFou;++l) {
+				for (int index = 0; index < nbDeplacementCavalier+1; ++index) {
+					model.or(model.arithm(cavalierI[k], "-", fouI[l], "!=", deplacementPossibleCavalierI[index]), model.arithm(cavalierJ[k], "-", fouJ[l], "!=", deplacementPossibleCavalierJ[index])).post();
+				}
+				
+			}
+			for (int l=0;l<totalTour;++l) {
+				for (int index = 0; index < nbDeplacementCavalier+1; ++index) {
+					model.or(model.arithm(cavalierI[k], "-", tourI[l], "!=", deplacementPossibleCavalierI[index]), model.arithm(cavalierJ[k], "-", tourJ[l], "!=", deplacementPossibleCavalierJ[index])).post();
+				}
+			}
+			
+			for (int l=k+1;l<totalCavalier;++l) {
+				for (int index = 0; index < nbDeplacementCavalier+1; ++index) {
+					model.or(model.arithm(cavalierI[k], "-", cavalierI[l], "!=", deplacementPossibleCavalierI[index]), model.arithm(cavalierJ[k], "-", cavalierJ[l], "!=", deplacementPossibleCavalierJ[index])).post();
+				}
+			}			
 		}
 		System.out.println("Start");
 		while (model.getSolver().solve()){
@@ -127,8 +171,6 @@ public class Main {
 	}
 
 	
-		
-	
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
     				// Début d'affichage de la matrice
@@ -150,13 +192,13 @@ public class Main {
     	}
 
     	for (int i=0; i<cavI.length;++i) {
-    		matrix[cavI[i].getValue()][cavJ[i].getValue()] = CAVALIER+i;
+    		matrix[cavI[i].getValue()][cavJ[i].getValue()] = CAVALIER+(i+1);
     	}
     	for (int i=0; i<tourI.length;++i ) {
-    		matrix[tourI[i].getValue()][tourJ[i].getValue()] = TOUR+i;
+    		matrix[tourI[i].getValue()][tourJ[i].getValue()] = TOUR+(i+1);
     	}
     	for (int i=0; i<fouI.length;++i ) {
-    		matrix[fouI[i].getValue()][fouJ[i].getValue()] = FOU+i;
+    		matrix[fouI[i].getValue()][fouJ[i].getValue()] = FOU+(i+1);
     	}
     	
     	for (int i=0; i<size; i++) {
