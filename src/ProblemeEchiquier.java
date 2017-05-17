@@ -63,10 +63,9 @@ public class ProblemeEchiquier {
         	System.out.println("Veuillez spécifiez le type d'exécution ( -i ) pour INDEPENDANCE et ( -d ) pour DOMINATION.");
         }
     }
-    public void doDomination() {
-    	
+    
+    public List<Piece> createAllPieces() {
     	List<Piece> allPieces = new ArrayList<Piece>();
-    	
         for (int i = 0; i < totalCavalier; i++) {
         	allPieces.add(new Cavalier(model.intVar(0, size-1), model.intVar(0, size-1)));
         }
@@ -76,6 +75,12 @@ public class ProblemeEchiquier {
         for (int i = 0; i < totalTour; i++) {
         	allPieces.add(new Tour(model.intVar(0, size-1), model.intVar(0, size-1), size));
         }
+        return allPieces;
+    }
+    
+    public void doDomination() {
+    	
+    	List<Piece> allPieces = createAllPieces();
 
         ArrayList<Constraint> constraintPiece = new ArrayList<Constraint>();
         ArrayList<Constraint> allConstraintPieces = new ArrayList<Constraint>();
@@ -86,7 +91,6 @@ public class ProblemeEchiquier {
         			for (int index = 0; index < currentPiece.getDeplacementI().length; ++index) {
     					Constraint a = model.and(model.arithm(currentPiece.getI(), "=", currentPiece.getDeplacementI()[index]+k), model.arithm(currentPiece.getJ(), "=", currentPiece.getDeplacementJ()[index]+l));
     					constraintPiece.add(a);
-        				
         			}
             		int next = 1;
             		Constraint Z = constraintPiece.get(0);
@@ -109,8 +113,6 @@ public class ProblemeEchiquier {
         		}
         	}
         }
-
-
         for (int i=0; i<allPieces.size(); ++i) {
         	for (int j=i+1; j<allPieces.size(); ++j) {
         		Piece currentPiece = allPieces.get(i);
@@ -118,8 +120,6 @@ public class ProblemeEchiquier {
         		model.or(model.arithm(currentPiece.getI() ,"!=", nextPiece.getI()), model.arithm(currentPiece.getJ(), "!=", nextPiece.getJ())).post();
         	}
         }
-        
-        
         if (!allConstraint.isEmpty()){
         	System.out.println("ici");
     		int second = 1;
@@ -130,190 +130,33 @@ public class ProblemeEchiquier {
     		}
     		X.post();
         }
+        
+        checkSolutionAndPrint(allPieces);
+    }
+    
+    public void doIndependance() {
 
-        System.out.println("Start");
+    	List<Piece> allPieces = createAllPieces();
+    	
+    	for (int i=0; i<allPieces.size(); ++i) {
+    		for (int j=0; j<allPieces.size(); ++j) {
+    			if (i!=j){
+        			Piece currentPiece = allPieces.get(i);
+        			Piece nextPiece = allPieces.get(j);
+        			for (int index = 0; index < currentPiece.getDeplacementI().length; ++index) {
+    					model.or(model.arithm(currentPiece.getI(), "-", nextPiece.getI(), "!=", currentPiece.getDeplacementI()[index]), model.arithm(currentPiece.getJ(), "-", nextPiece.getJ(), "!=", currentPiece.getDeplacementJ()[index])).post();
+        			}
+    			}
+    		}
+    	}
+		System.out.println("Start");
 		while (model.getSolver().solve()){
 			System.out.println("VOICI UNE SOLUTION POSSIBLE : ");
 			printMatrix(allPieces);
 		}
-		System.out.println("Stop");
-        
-    }
-    
-    public void doIndependance() {
-        // 2. Create variables
-    	List<int[]> allDeplacements;
-    	
-        IntVar[] cavalierI = new IntVar[totalCavalier];
-        IntVar[] cavalierJ = new IntVar[totalCavalier];
-        for (int i = 0; i < totalCavalier; i++) {
-        	cavalierI[i] = model.intVar(0, size-1);
-        	cavalierJ[i] = model.intVar(0, size-1);
-        }
-        IntVar[] fouI = new IntVar[totalFou];
-        IntVar[] fouJ = new IntVar[totalFou];
-        for (int i = 0; i < totalFou; i++) {
-        	fouI[i] = model.intVar(0, size-1);
-        	fouJ[i] = model.intVar(0, size-1);
-        }
-        IntVar[] tourI = new IntVar[totalTour];
-        IntVar[] tourJ = new IntVar[totalTour];
-        for (int i = 0; i < totalTour; i++) {
-        	tourI[i] = model.intVar(0, size-1);
-        	tourJ[i] = model.intVar(0, size-1);
-        }
-        
-        allDeplacements = getDeplacement(0,size-1,false);
-        int[] deplacementsTourI = allDeplacements.get(0);
-        int[] deplacementsTourJ = allDeplacements.get(1);
-        
-		for (int k=0;k<totalTour;++k) {
-			//Tour x Tour
-			for (int l=k+1;l<totalTour;++l) {
-				for (int index = 0; index < deplacementsTourI.length; ++index) {
-					model.or(model.arithm(tourI[k], "-", tourI[l], "!=", deplacementsTourI[index]), model.arithm(tourJ[k], "-", tourJ[l], "!=", deplacementsTourJ[index])).post();
-				}
-			}
-			//Tour x Fou
-			for (int l=0;l<totalFou;++l) {
-				for (int index = 0; index < deplacementsTourI.length; ++index) {
-					model.or(model.arithm(tourI[k], "-", fouI[l], "!=", deplacementsTourI[index]), model.arithm(tourJ[k], "-", fouJ[l], "!=", deplacementsTourJ[index])).post();
-				}			
-			}
-			//Tour x Cavalier
-			for (int l=0;l<totalCavalier;++l) {
-				for (int index = 0; index < deplacementsTourI.length; ++index) {
-					model.or(model.arithm(tourI[k], "-", cavalierI[l], "!=", deplacementsTourI[index]), model.arithm(tourJ[k], "-", cavalierJ[l], "!=", deplacementsTourJ[index])).post();
-				}
-			}
-		}
-		
-		allDeplacements = getDeplacement(size-1,0,false);
-		int[] deplacementsFouI = allDeplacements.get(0); 
-		int[] deplacementsFouJ = allDeplacements.get(1);
-		
-
-		for (int k=0;k<totalFou;++k) {
-			for (int l=k+1;l<totalFou;++l) {
-				for (int index = 0; index < deplacementsFouI.length; ++index) {
-					model.or(model.arithm(fouI[k], "-", fouI[l], "!=", deplacementsFouI[index]), model.arithm(fouJ[k], "-", fouJ[l], "!=", deplacementsFouJ[index])).post();
-				}
-			}
-			for (int l=0;l<totalTour;++l) {
-				for (int index = 0; index < deplacementsFouI.length; ++index) {
-					model.or(model.arithm(fouI[k], "-", tourI[l], "!=", deplacementsFouI[index]), model.arithm(fouJ[k], "-", tourJ[l], "!=", deplacementsFouJ[index])).post();
-				}
-			}
-			for (int l=0;l<totalCavalier;++l) {
-				for (int index = 0; index < deplacementsFouI.length; ++index) {
-					model.or(model.arithm(fouI[k], "-", cavalierI[l], "!=", deplacementsFouI[index]), model.arithm(fouJ[k], "-", cavalierJ[l], "!=", deplacementsFouJ[index])).post();
-				}			}
-		}
-		
-		allDeplacements = getDeplacement(0,0,true);
-		int[] deplacementsCavalierI = allDeplacements.get(0); 
-		int[] deplacementsCavalierJ = allDeplacements.get(1);
-		
-		
-		for (int k=0; k<totalCavalier;++k) {
-			for (int l=0;l<totalFou;++l) {
-				for (int index = 0; index < deplacementsCavalierI.length; ++index) {
-					model.or(model.arithm(cavalierI[k], "-", fouI[l], "!=", deplacementsCavalierI[index]), model.arithm(cavalierJ[k], "-", fouJ[l], "!=", deplacementsCavalierJ[index])).post();
-				}
-				
-			}
-			for (int l=0;l<totalTour;++l) {
-				for (int index = 0; index < deplacementsCavalierI.length; ++index) {
-					model.or(model.arithm(cavalierI[k], "-", tourI[l], "!=", deplacementsCavalierI[index]), model.arithm(cavalierJ[k], "-", tourJ[l], "!=", deplacementsCavalierJ[index])).post();
-				}
-			}
-			
-			for (int l=k+1;l<totalCavalier;++l) {
-				for (int index = 0; index < deplacementsCavalierI.length; ++index) {
-					model.or(model.arithm(cavalierI[k], "-", cavalierI[l], "!=", deplacementsCavalierI[index]), model.arithm(cavalierJ[k], "-", cavalierJ[l], "!=", deplacementsCavalierJ[index])).post();
-				}
-			}			
-		}
-		System.out.println("Start");
-		while (model.getSolver().solve()){
-			System.out.println("VOICI UNE SOLUTION POSSIBLE : ");
-			//printMatrix(cavalierI, cavalierJ, fouI, fouJ, tourI, tourJ);
-		}
 		System.out.println("Stop");    	
     }
-
-	
-    /**
-     * Retourne tous les déplacements possibles pour une pièce selon les paramètres donnés
-     * 
-     * @param diagonale
-     * 			Le nombre de case que la pièce peut se déplacer en diagonale
-     * @param droit
-     * 			Le nombre de case que la pièce peut se déplacer sur une ligne
-     * @param L
-     * 			Booléen pour savoir si oui ou non la pièce peut se déplacer en L
-     * @return
-     * 		Une liste d'arrays de déplacement en I et en J
-     */
-    public List<int[]> getDeplacement(int diagonale, int droit, boolean L) {
-    	List<int[]> allDeplacement = new ArrayList<int[]>();
-    	int totalDeplacementI = L ? 8 : 0; 
-    	int totalDeplacementJ = L ? 8 : 0;
-    	totalDeplacementI += diagonale*4 + droit*4 + 1; // +1 car on prend en compte le fait qu'il reste sur place
-    	totalDeplacementJ += diagonale*4 + droit*4 + 1;	
-    	int[] deplacementI = new int[totalDeplacementI];
-    	int[] deplacementJ = new int[totalDeplacementJ];
-    	
-    	deplacementI[0] = 0;	// Ce qui empêche la superposition d'une pièce dans le problème d'indépendance
-    	deplacementJ[0] = 0;	// et permet également de "marquer" la case où se trouve la pièce dans le problèm de domination
-    	int current = 1;
-    	if (L) {
-    		deplacementI[current] = -2;
-    		deplacementI[current+1] = -2;
-    		deplacementI[current+2] = -1;
-    		deplacementI[current+3] = 1;
-    		deplacementI[current+4] = 2;
-    		deplacementI[current+5] = 2;
-    		deplacementI[current+6] = 1;
-    		deplacementI[current+7] = -1;
-    		deplacementJ[current] = -1;
-    		deplacementJ[current+1] = 1;
-    		deplacementJ[current+2] = 2;
-    		deplacementJ[current+3] = 2;
-    		deplacementJ[current+4] = 1;
-    		deplacementJ[current+5] = -1;
-    		deplacementJ[current+6] = -2;
-    		deplacementJ[current+7] = -2;
-    		current += 8;
-    	}
-    	for (int i = 1; i < diagonale+1; ++i) {
-    		deplacementI[current] = -i;
-    		deplacementJ[current] = -i;
-    		deplacementI[current+1] = -i;
-    		deplacementJ[current+1] = i;
-    		deplacementI[current+2] = i;
-    		deplacementJ[current+2] = -i;
-    		deplacementI[current+3] = -i;
-    		deplacementJ[current+3] = -i;
-    		current += 4;
-    	}
-    	for (int i = 1; i < droit+1; ++i) {
-    		deplacementI[current] = -i;
-    		deplacementJ[current] = 0;
-    		deplacementI[current+1] = 0;
-    		deplacementJ[current+1] = i;
-    		deplacementI[current+2] = i;
-    		deplacementJ[current+2] = 0;
-    		deplacementI[current+3] = 0;
-    		deplacementJ[current+3] = -i;
-    		current += 4;
-    	}
-    	allDeplacement.add(deplacementI);
-    	allDeplacement.add(deplacementJ);
-    	return allDeplacement;
-    }
-
-	
+    
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
     				// Début d'affichage de la matrice
@@ -346,6 +189,15 @@ public class ProblemeEchiquier {
     		System.out.println("");
     	}
     }
+    
+    public void checkSolutionAndPrint(List<Piece> allPieces) {
+        System.out.println("Start");
+		while (model.getSolver().solve()){
+			System.out.println("VOICI UNE SOLUTION POSSIBLE : ");
+			printMatrix(allPieces);
+		}
+		System.out.println("Stop");
+    }
 
     public int findInStringArray(String[] array, String value) {
     	boolean notFound = true;
@@ -365,8 +217,3 @@ public class ProblemeEchiquier {
     }
     	
 }
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-    				// Fin d'affichage de la matrice
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
