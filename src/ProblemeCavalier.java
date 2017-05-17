@@ -27,6 +27,9 @@ public class ProblemeCavalier {
         System.out.println("---------------------------------------------");
 	}
 	
+	/**
+	 * Permet de lancer la domination des cavaliers
+	 */
 	public void dominationCavalier() {
 		int[] deplacementPossibleCavalierI = new int[nbDeplacementCavalier+1]; // +1 car il reste sur place
 		int[] deplacementPossibleCavalierJ = new int[nbDeplacementCavalier+1];
@@ -49,7 +52,6 @@ public class ProblemeCavalier {
 		deplacementPossibleCavalierJ[6] = -2;
 		deplacementPossibleCavalierJ[7] = -2;
 		deplacementPossibleCavalierJ[8] = 0;
-		
 		boolean foundSolution = false;
         ArrayList<Constraint> constraintCavalier = new ArrayList<Constraint>();
         ArrayList<Constraint> globalConstraint = new ArrayList<Constraint>();
@@ -118,8 +120,7 @@ public class ProblemeCavalier {
 			}
 		}
 	}
-	
-	
+
 	/**
 	 * Affichage de la matrice
 	 * @param cav
@@ -145,6 +146,4 @@ public class ProblemeCavalier {
     		System.out.println("");
     	}
     }
-    
-	
 }

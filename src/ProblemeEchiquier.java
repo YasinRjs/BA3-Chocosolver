@@ -26,7 +26,7 @@ public class ProblemeEchiquier {
     public Model model = new Model("ProblemeEchiquier");
     public String chosen = "notOK";
     public int nbDeplacementCavalier = 8;
-        
+
     public ProblemeEchiquier(String[] args) {
     	int index;
     	try{
@@ -64,199 +64,68 @@ public class ProblemeEchiquier {
         }
     }
     public void doDomination() {
-    	// A METTRE A JOUR
-        // 2. Create variables
-
-    	List<int[]> allDeplacements;
-
     	
-		IntVar[] cavalierI = new IntVar[totalCavalier];
-        IntVar[] cavalierJ = new IntVar[totalCavalier];
+    	List<Piece> allPieces = new ArrayList<Piece>();
+    	
         for (int i = 0; i < totalCavalier; i++) {
-        	cavalierI[i] = model.intVar(0, size-1);
-        	cavalierJ[i] = model.intVar(0, size-1);
+        	allPieces.add(new Cavalier(model.intVar(0, size-1), model.intVar(0, size-1)));
         }
-        IntVar[] fouI = new IntVar[totalFou];
-        IntVar[] fouJ = new IntVar[totalFou];
         for (int i = 0; i < totalFou; i++) {
-        	fouI[i] = model.intVar(0, size-1);
-        	fouJ[i] = model.intVar(0, size-1);
+        	allPieces.add(new Fou(model.intVar(0, size-1), model.intVar(0, size-1), size));
         }
-		
-        IntVar[] tourI = new IntVar[totalTour];
-        IntVar[] tourJ = new IntVar[totalTour];
         for (int i = 0; i < totalTour; i++) {
-        	tourI[i] = model.intVar(0, size-1);
-        	tourJ[i] = model.intVar(0, size-1);
+        	allPieces.add(new Tour(model.intVar(0, size-1), model.intVar(0, size-1), size));
         }
-        ArrayList<Constraint> constraintTour = new ArrayList<Constraint>();
-        ArrayList<Constraint> constraintFou = new ArrayList<Constraint>();
-        ArrayList<Constraint> constraintCavalier = new ArrayList<Constraint>();
-        ArrayList<Constraint> allConstraintTour = new ArrayList<Constraint>();
-        ArrayList<Constraint> allConstraintFou = new ArrayList<Constraint>();
-        ArrayList<Constraint> allConstraintCavalier = new ArrayList<Constraint>();
-        ArrayList<Constraint> allConstraintPiece = new ArrayList<Constraint>();
-        ArrayList<Constraint> globalConstraint = new ArrayList<Constraint>();
-		int[] movement = new int[size];
-		for (int k=0;k<size;++k) {
-			movement[k] = k;
-		}
 
-		
-		
-        allDeplacements = getDeplacement(0,size-1,false);
-        int[] deplacementsTourI = allDeplacements.get(0);
-        int[] deplacementsTourJ = allDeplacements.get(1);
-
-		allDeplacements = getDeplacement(size-1,0,false);
-		int[] deplacementsFouI = allDeplacements.get(0); 
-		int[] deplacementsFouJ = allDeplacements.get(1);
-		
-		allDeplacements = getDeplacement(0,0,true);
-		int[] deplacementsCavalierI = allDeplacements.get(0); 
-		int[] deplacementsCavalierJ = allDeplacements.get(1);
-
-		
+        ArrayList<Constraint> constraintPiece = new ArrayList<Constraint>();
+        ArrayList<Constraint> allConstraintPieces = new ArrayList<Constraint>();
+        ArrayList<Constraint> allConstraint = new ArrayList<Constraint>();
         for (int k=0; k<size; ++k) {
         	for (int l=0; l<size; ++l) {
-        		for (int m=0;m<totalTour;++m) {
-    				for (int index = 0; index < deplacementsTourI.length; ++index) {
-    					Constraint a = model.and(model.arithm(tourI[m], "=", deplacementsTourI[index]+k), model.arithm(tourJ[m], "=", deplacementsTourJ[index]+l));
-    					constraintTour.add(a);
-    				}
-
+        		for (Piece currentPiece : allPieces) {
+        			for (int index = 0; index < currentPiece.getDeplacementI().length; ++index) {
+    					Constraint a = model.and(model.arithm(currentPiece.getI(), "=", currentPiece.getDeplacementI()[index]+k), model.arithm(currentPiece.getJ(), "=", currentPiece.getDeplacementJ()[index]+l));
+    					constraintPiece.add(a);
+        				
+        			}
             		int next = 1;
-            		Constraint Z = constraintTour.get(0);
-            		while (next < constraintTour.size()) {
-                    	Z = model.or(Z,constraintTour.get(next));
+            		Constraint Z = constraintPiece.get(0);
+            		while (next < constraintPiece.size()) {
+                    	Z = model.or(Z,constraintPiece.get(next));
                     	next+=1;
             		}
-            		allConstraintTour.add(Z);
-            		constraintTour.clear();
+            		allConstraintPieces.add(Z);
+            		constraintPiece.clear();
         		}
-        		if (!allConstraintTour.isEmpty()) {
+        		if (!allConstraintPieces.isEmpty()) {
             		int suivant = 1;
-            		Constraint W = allConstraintTour.get(0);
-            		while (suivant < allConstraintTour.size()) {
-                    	W = model.or(W,allConstraintTour.get(suivant));
+            		Constraint W = allConstraintPieces.get(0);
+            		while (suivant < allConstraintPieces.size()) {
+                    	W = model.or(W,allConstraintPieces.get(suivant));
                     	suivant+=1;
             		}
-            		allConstraintPiece.add(W); 	
-            		allConstraintTour.clear();
-        		}
-        		//ICI YA UN AND POUR TOUT LES PROCHAINS
-        		
-        		for (int m=0;m<totalFou;++m) {
-    				for (int index = 0; index < deplacementsFouI.length; ++index) {
-    					Constraint a = model.and(model.arithm(fouI[m], "=", deplacementsFouI[index]+k), model.arithm(fouJ[m], "=", deplacementsFouJ[index]+l));
-    					constraintFou.add(a);
-    				}
-
-            		int next = 1;
-            		Constraint Z = constraintFou.get(0);
-            		while (next < constraintFou.size()) {
-                    	Z = model.or(Z,constraintFou.get(next));
-                    	next+=1;
-            		}
-            		allConstraintFou.add(Z);
-            		constraintFou.clear();
-        		}
-        		if (!allConstraintFou.isEmpty()) {
-            		int suivant = 1;
-            		Constraint W = allConstraintFou.get(0);
-            		while (suivant < allConstraintFou.size()) {
-                    	W = model.or(W,allConstraintFou.get(suivant));
-                    	suivant+=1;
-            		}
-            		allConstraintPiece.add(W); 	
-            		allConstraintFou.clear();
-        		}
-
-        		//CAVALIER
-        		for (int m=0; m<totalCavalier; ++m) {
-    				for (int index = 0; index < deplacementsCavalierI.length; ++index) {
-    					Constraint a = model.and(model.arithm(cavalierI[m], "=", deplacementsCavalierI[index]+k), model.arithm(cavalierJ[m], "=", deplacementsCavalierJ[index]+l));
-    					constraintCavalier.add(a);
-    				}
-            		int next = 1;
-            		Constraint Z = constraintCavalier.get(0);
-            		while (next < constraintCavalier.size()) {
-                    	Z = model.or(Z,constraintCavalier.get(next));
-                    	next+=1;
-            		}
-            		allConstraintCavalier.add(Z);
-            		constraintCavalier.clear();
-        		}
-        		if (!allConstraintCavalier.isEmpty()) {
-            		int suivant = 1;
-            		Constraint W = allConstraintCavalier.get(0);
-            		while (suivant < allConstraintCavalier.size()) {
-                    	W = model.or(W,allConstraintCavalier.get(suivant));
-                    	suivant+=1;
-            		}
-            		allConstraintPiece.add(W); 	
-            		allConstraintCavalier.clear();
-        		}
-        		
-        		
-        		// OR POUR TOUTES LES PIECES
-        		if (!allConstraintPiece.isEmpty()) {
-        			int next = 1;
-        			Constraint W = allConstraintPiece.get(0);
-            		while (next < allConstraintPiece.size()) {
-                    	W = model.or(W,allConstraintPiece.get(next));
-                    	next+=1;
-            		}
-            		globalConstraint.add(W); 	
-            		allConstraintPiece.clear();
+            		allConstraint.add(W); 	
+            		allConstraintPieces.clear();
         		}
         	}
         }
 
 
-        // Superposition de Tour x Tour
-        for (int i=0; i<totalTour; ++i) {
-        	for (int j=i+1;j<totalTour;++j) {
-        		model.or(model.arithm(tourI[i] ,"!=", tourI[j]), model.arithm(tourJ[i], "!=", tourJ[j])).post();
-        	}
-        }
-        // Superposition de fou x fou
-        for (int i=0; i<totalFou; ++i) {
-        	for (int j=i+1; j<totalFou; ++j) {
-        		model.or(model.arithm(fouI[i], "!=", fouI[j]), model.arithm(fouJ[i], "!=", fouJ[j])).post();
-        	}
-        }
-        // Superposition de cavalier x cavalier
-        for (int i=0; i<totalCavalier; ++i) {
-        	for (int j=i+1; j<totalCavalier; ++j) {
-        		model.or(model.arithm(cavalierI[i], "!=", cavalierI[j]), model.arithm(cavalierJ[i], "!=", cavalierJ[j])).post();
-        	}
-        }
-        // Superposition de fou x Tour
-        for (int i=0; i<totalFou; ++i) {
-        	for (int j=0; j<totalTour; ++j) {
-        		model.or(model.arithm(fouI[i], "!=", tourI[j]), model.arithm(fouJ[i], "!=", tourJ[j])).post();
-        	}
-        }
-        // Superposition de fou x Cavalier
-        for (int i=0; i<totalFou; ++i) {
-        	for (int j=0; j<totalCavalier; ++j) {
-        		model.or(model.arithm(fouI[i], "!=", cavalierI[j]), model.arithm(fouJ[i], "!=", cavalierJ[j])).post();
-        	}
-        }
-        // Superposition de cavalier x Tour
-        for (int i=0; i<totalCavalier; ++i) {
-        	for (int j=0; j<totalTour; ++j) {
-        		model.or(model.arithm(cavalierI[i], "!=", tourI[j]), model.arithm(cavalierJ[i], "!=", tourJ[j])).post();
+        for (int i=0; i<allPieces.size(); ++i) {
+        	for (int j=i+1; j<allPieces.size(); ++j) {
+        		Piece currentPiece = allPieces.get(i);
+        		Piece nextPiece = allPieces.get(j);
+        		model.or(model.arithm(currentPiece.getI() ,"!=", nextPiece.getI()), model.arithm(currentPiece.getJ(), "!=", nextPiece.getJ())).post();
         	}
         }
         
         
-        if (!globalConstraint.isEmpty()){
+        if (!allConstraint.isEmpty()){
+        	System.out.println("ici");
     		int second = 1;
-    		Constraint X = globalConstraint.get(0);
-    		while (second < globalConstraint.size()) {
-            	X = model.and(X,globalConstraint.get(second));
+    		Constraint X = allConstraint.get(0);
+    		while (second < allConstraint.size()) {
+            	X = model.and(X,allConstraint.get(second));
             	second+=1;
     		}
     		X.post();
@@ -265,9 +134,9 @@ public class ProblemeEchiquier {
         System.out.println("Start");
 		while (model.getSolver().solve()){
 			System.out.println("VOICI UNE SOLUTION POSSIBLE : ");
-			printMatrix(cavalierI, cavalierJ, fouI, fouJ, tourI, tourJ);
+			printMatrix(allPieces);
 		}
-		System.out.println("Stop");    	
+		System.out.println("Stop");
         
     }
     
@@ -368,7 +237,7 @@ public class ProblemeEchiquier {
 		System.out.println("Start");
 		while (model.getSolver().solve()){
 			System.out.println("VOICI UNE SOLUTION POSSIBLE : ");
-			printMatrix(cavalierI, cavalierJ, fouI, fouJ, tourI, tourJ);
+			//printMatrix(cavalierI, cavalierJ, fouI, fouJ, tourI, tourJ);
 		}
 		System.out.println("Stop");    	
     }
@@ -457,7 +326,7 @@ public class ProblemeEchiquier {
 	 * @param fou
 	 * @param tour
 	 */
-    public void printMatrix(IntVar[] cavI, IntVar[] cavJ, IntVar[] fouI, IntVar[] fouJ, IntVar[] tourI, IntVar[] tourJ) {
+    public void printMatrix(List<Piece> allPieces) {
     	String[][] matrix = new String[size][size];
     	for (int i=0; i<size; i++) {
     		for (int j=0; j<size; j++) {
@@ -465,14 +334,9 @@ public class ProblemeEchiquier {
     		}
     	}
 
-    	for (int i=0; i<cavI.length;++i) {
-    		matrix[cavI[i].getValue()][cavJ[i].getValue()] = CAVALIER+(i+1);
-    	}
-    	for (int i=0; i<tourI.length;++i ) {
-    		matrix[tourI[i].getValue()][tourJ[i].getValue()] = TOUR+(i+1);
-    	}
-    	for (int i=0; i<fouI.length;++i ) {
-    		matrix[fouI[i].getValue()][fouJ[i].getValue()] = FOU+(i+1);
+    	for (int i=0; i<allPieces.size(); ++i) {
+    		Piece currentPiece = allPieces.get(i);
+    		matrix[currentPiece.getI().getValue()][currentPiece.getJ().getValue()] = currentPiece.getLetter()+(i+1);
     	}
     	
     	for (int i=0; i<size; i++) {

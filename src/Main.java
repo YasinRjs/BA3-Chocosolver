@@ -7,6 +7,7 @@ public class Main {
     	ProblemeEchiquier myProbleme = new ProblemeEchiquier(args);
     	myProbleme.start();
     	
+    	System.out.println();
 
     	
     /*	System.out.print("Veuillez choisir la taille de la matrice : ");
