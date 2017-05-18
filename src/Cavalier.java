@@ -12,6 +12,12 @@ public class Cavalier extends Piece {
 	private static int[] deplacementCavalierI = null;
 	private static int[] deplacementCavalierJ = null;
 	
+	Cavalier(){
+		if (deplacementCavalierI == null) {
+			setDeplacement(diagonale, droite, L);
+		}
+	}
+	
 	Cavalier(IntVar valuesI, IntVar valuesJ) {
 		this.positionI = valuesI;
 		this.positionJ = valuesJ;

@@ -13,7 +13,10 @@ public class Main {
     	System.out.print("Veuillez choisir la taille de la matrice : ");
     	Scanner in = new Scanner(System.in);
     	int size = in.nextInt();
-    	ProblemeCavalier thisProbleme = new ProblemeCavalier(size);
+    	System.out.print("Veuillez choisir un temps limite (en secondes) pour chaque itération d'optimisation : ");
+    	in = new Scanner(System.in);
+    	String limitTime = in.nextInt() +"s";
+    	ProblemeCavalier thisProbleme = new ProblemeCavalier(size,limitTime);
     	thisProbleme.start();
     	
     }
