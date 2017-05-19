@@ -10,7 +10,7 @@ public class Main {
     	
     	//System.out.println();
     	
-    	System.out.print("Veuillez choisir la taille de la matrice : ");
+/*    	System.out.print("Veuillez choisir la taille de la matrice : ");
     	Scanner in = new Scanner(System.in);
     	int size = in.nextInt();
     	System.out.print("Veuillez choisir un temps limite (en secondes) pour chaque itération d'optimisation : ");
@@ -18,6 +18,7 @@ public class Main {
     	String limitTime = in.nextInt() +"s";
     	ProblemeCavalier thisProbleme = new ProblemeCavalier(size,limitTime);
     	thisProbleme.start();
-    	
+*/
+    	Musee test = new Musee();
     }
 }

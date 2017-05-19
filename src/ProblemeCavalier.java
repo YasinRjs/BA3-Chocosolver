@@ -1,6 +1,4 @@
 import java.util.ArrayList;
-import java.util.List;
-
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solver;
 import org.chocosolver.solver.constraints.Constraint;
@@ -69,7 +67,6 @@ public class ProblemeCavalier {
         		allConstraintCavalier.add(Z);
         		constraintCavalier.clear();       		
         	}
-        	
         }
         if (!allConstraintCavalier.isEmpty()){
     		int second = 1;
@@ -105,17 +102,7 @@ public class ProblemeCavalier {
             
         }
         
-        for (int i = 0; i < size; ++i) {
-        	for (int j = 0; j < size; ++j) {
-        		if (copyMatrix[i][j] == 1) {
-        			System.out.print("C ");
-        		}
-        		else {
-        			System.out.print("* ");
-        		}
-        	}
-        	System.out.println();
-        }
+        printMatrix(copyMatrix);
 	}
 
 	/**
@@ -130,30 +117,21 @@ public class ProblemeCavalier {
 		return (posI < size && posI >= 0 && posJ < size && posJ >=0);
 	}
        
-    
-
 	/**
 	 * Affichage de la matrice
 	 * @param allCavaliers
 	 */
-    public void printMatrix(List<Cavalier> allCavaliers) {
-    	String[][] matrix = new String[size][size];
-    	for (int i=0; i<size; i++) {
-    		for (int j=0; j<size; j++) {
-    			matrix[i][j] = "--";
-    		}
-    	}
-
-    	for (int i=0; i<allCavaliers.size();++i) {
-    		Cavalier currentCavalier = allCavaliers.get(i);
-    		matrix[currentCavalier.getI().getValue()][currentCavalier.getJ().getValue()] = currentCavalier.getLetter()+(i+1);
-    	}
-    	
-    	for (int i=0; i<size; i++) {
-    		for (int j=0; j<size; j++) {
-    			System.out.print(matrix[i][j] + " ");
-    		}
-    		System.out.println("");
-    	}
+    public void printMatrix(int[][] copyMatrix) {
+        for (int i = 0; i < size; ++i) {
+        	for (int j = 0; j < size; ++j) {
+        		if (copyMatrix[i][j] == 1) {
+        			System.out.print("C ");
+        		}
+        		else {
+        			System.out.print("* ");
+        		}
+        	}
+        	System.out.println();
+        }
     }
 }
