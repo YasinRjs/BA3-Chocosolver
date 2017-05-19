@@ -20,5 +20,6 @@ public class Main {
     	thisProbleme.start();
 */
     	Musee test = new Musee();
+    	test.solveMusee();
     }
 }
