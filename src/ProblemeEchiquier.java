@@ -24,8 +24,6 @@ public class ProblemeEchiquier {
     private ArrayList<Constraint> constraintPosition = new ArrayList<Constraint>();
     private ArrayList<Constraint> allConstraintPieces = new ArrayList<Constraint>();
     private ArrayList<Constraint> allConstraint = new ArrayList<Constraint>();
-    private String VERTICAL = "V";
-    private String HORIZONTAL = "H";
 	List<Piece> allPieces = new ArrayList<Piece>();
     
     public ProblemeEchiquier(String[] args) {
@@ -125,19 +123,12 @@ public class ProblemeEchiquier {
 		constraintPosition.clear();
     }
     
-    public void addConstraintPosition(int p, int k, int l, int i, String direction) {
-    	int ligne = 0;
-    	int colonne = 0;
-    	if (direction == VERTICAL) {
-    		ligne = 1;
-    	}
-    	else {
-    		colonne = 1;
-    	}
+    public void addConstraintPosition(int p, int newPosI, int newPosJ) {
+
 		for (int q = 0; q < allPieces.size(); ++q) { // Toutes les autres pièces ne sont pas dans la case
 			if (p != q) {
 				Piece nextPiece = allPieces.get(q);
-				Constraint b = model.and(model.arithm(nextPiece.getI(), "!=", k+ligne*i),model.arithm(nextPiece.getI(), "!=", l+colonne*i));
+				Constraint b = model.and(model.arithm(nextPiece.getI(), "!=", newPosI),model.arithm(nextPiece.getI(), "!=", newPosI));
 				constraintPosition.add(b);
 			}
 		}
@@ -165,6 +156,56 @@ public class ProblemeEchiquier {
 		allConstraintPieces.add(Z);
 		constraintPiece.clear();
     }
+    
+    
+    public void addConstraintLigneDroite(int deplacementI, int deplacementJ, int p, int k, int l) {
+		if (deplacementI > 1) { // on va vers le bas
+			for (int i = 1; i < deplacementI; ++i){		// Différence de position
+				addConstraintPosition(p, k+i, l);
+			}
+		}
+		if (deplacementI < -1) { // on va vers le haut
+			for (int i = -1; i > deplacementI; --i){	
+				addConstraintPosition(p, k+i, l);
+			}
+		}
+		if (deplacementJ > 1) { // on va vers la droite
+			for (int j = 1; j < deplacementJ; ++j){		// Différence de position
+				addConstraintPosition(p, k, l+j);
+			}
+		}
+		if (deplacementJ < -1) { // on va vers la gauche
+			for (int j = -1; j > deplacementJ; --j){		// Différence de position
+				addConstraintPosition(p, k, l+j);
+			}
+		}    						
+
+    }
+    
+    public void addConstraintDiagonale(int deplacementI, int deplacementJ, int p, int k, int l) {
+        if (deplacementI > 1 && deplacementJ > 1) { // EN BAS A DROITE
+            for (int i = 1; i < deplacementI; ++i) {
+            	addConstraintPosition(p, k+i, l+i);
+            }
+        }
+        else if (deplacementI < -1 && deplacementJ < -1) { // EN HAUT A GAUCHE
+            for (int i = -1; i > deplacementI; --i) {
+            	addConstraintPosition(p, k+i, l+i);
+            }                           
+        }
+        else if (deplacementI > 1 && deplacementJ < -1) { // EN BAS A GAUCHE
+            for (int i = 1; i < deplacementI; ++i) {
+            	addConstraintPosition(p, k+i, l-i);
+            }
+        
+        }
+        else if (deplacementI < -1 && deplacementJ > 1) { // EN HAUT A DROITE
+            for (int i = 1; i > deplacementJ; ++i) {
+            	addConstraintPosition(p, k-i, l+i);
+            }                                
+        }                                
+    }
+    
     
     public void regroupAllConstraints() {
 		if (!allConstraintPieces.isEmpty()) {
@@ -212,28 +253,13 @@ public class ProblemeEchiquier {
         				if (checkRange(k+deplacementI,l+deplacementJ)) {
         					Constraint a = model.and(model.arithm(currentPiece.getI(), "=", deplacementI+k), model.arithm(currentPiece.getJ(), "=", deplacementJ+l));
         					constraintDeplacements.add(a);
-        					if (deplacementI == 0 || deplacementJ ==0) {	// DEPLACEMENT LIGNE DROITE
-        						if (deplacementI > 1) { // on va vers le bas
-        							for (int i = 1; i < deplacementI; ++i){		// Différence de position
-        								addConstraintPosition(p, k, l, i, VERTICAL);
-        							}
-        						}
-        						if (deplacementI < -1) { // on va vers le haut
-        							for (int i = -1; i > deplacementI; --i){	
-        								addConstraintPosition(p, k, l, i, VERTICAL);
-        							}
-        						}
-        						if (deplacementJ > 1) { // on va vers la droite
-        							for (int j = 1; j < deplacementJ; ++j){		// Différence de position
-        								addConstraintPosition(p, k, l, j, HORIZONTAL);
-        							}
-        						}
-        						if (deplacementJ < -1) { // on va vers la gauche
-        							for (int j = -1; j > deplacementJ; --j){		// Différence de position
-            							addConstraintPosition(p, k, l, j, HORIZONTAL);
-        							}
-        						}    						
+        					if (deplacementI == 0 || deplacementJ ==0) {	
+        						addConstraintLigneDroite(deplacementI,deplacementJ,p,k,l);
+        						// DEPLACEMENT LIGNE DROITE
         					}
+                            else if (Math.abs(deplacementI) == Math.abs(deplacementJ)) { // DIAGONALE
+                            	addConstraintDiagonale(deplacementI,deplacementJ,p,k,l);
+                            }
         					addConstraintPiece();
         				}
         			}
