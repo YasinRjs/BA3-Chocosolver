@@ -1,6 +1,8 @@
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solver;
@@ -9,7 +11,7 @@ import org.chocosolver.solver.variables.IntVar;
 
 public class Musee {
 
-	private Model model;
+	private Model model = new Model("Problème du musée");
 	private ArrayList<ArrayList<IntVar>> matrix = new ArrayList<ArrayList<IntVar>>();
 	private char MURFILE = '*';
 	private int MUR = 0;
@@ -20,39 +22,35 @@ public class Musee {
 	private int totalPositionVide = 0;
 	private int sizeI = 0;
 	private int sizeJ = 0;
+	int copyTotalCapteur = 0;
+	int[][] copyMatrix;
+	Map<Integer,String> dicoValues;
+	ArrayList<Integer> listCapteurs = new ArrayList<Integer>();
 	
-	private char NORD = 'N';
-	private char SUD = 'S';
-	private char EST = 'E';
-	private char OUEST = 'O';
+	private String NORD = "N";
+	private String SUD = "S";
+	private String EST = "E";
+	private String OUEST = "O";
 	
 	private int CAPTEUR_NORD = 2;
 	private int CAPTEUR_SUD = 3;
 	private int CAPTEUR_EST = 4;
 	private int CAPTEUR_OUEST = 5;
 	
+    ArrayList<Constraint> constraintCapteur = new ArrayList<Constraint>();
+    ArrayList<Constraint> allConstraintCapteurs = new ArrayList<Constraint>();
 	
-
 	Musee(){
-		model = new Model("Probleme du Musée");
 		parseMuseeFile();
-        for (int i = 0; i < sizeI; ++i) {
-        	for (int j = 0; j < matrix.get(i).size(); ++j) {
-        		if (getPositionValue(i,j) == 0) {
-            		System.out.print("* ");
-        		}
-        		else {
-        			System.out.print("  ");
-        		}
-        	}
-        	System.out.println();
-        }
-        System.out.println("Matrice de taille : " + sizeI + " * " + sizeJ);
-
+		printMusee();
+		createDicoValuesAndListCapteurs();
+        addConstraints();
+        minimizeCapteur();
+        solve();
+        printSolution();
 	}
-	
+
 	public void parseMuseeFile() {
-		
 		File file = new File("/home/yarslan/Bureau/Workspace/InfoFond/src/Musee.txt");
 		try {
 			Scanner input = new Scanner(file);
@@ -73,6 +71,7 @@ public class Musee {
 				}
 				matrix.add(currentLine);
 			}
+			input.close();
 			sizeJ = matrix.get(0).size();
 		} catch (FileNotFoundException e) {
 			System.out.println("Problème Parser");
@@ -80,13 +79,7 @@ public class Musee {
 		}
 	}
 	
-	public void solveMusee() {
-        totalCapteur = model.intVar("Nombre de Capteur",0,totalPositionVide);
-        model.setObjective(Model.MINIMIZE, totalCapteur);
-
-        ArrayList<Constraint> constraintCapteur = new ArrayList<Constraint>();
-        ArrayList<Constraint> allConstraintCapteurs = new ArrayList<Constraint>();
-
+	public void addConstraints() {
         for (int k = 0; k < sizeI; ++k) {
         	for (int l = 0; l < matrix.get(k).size(); ++l) {
     			//IF PAS UN MUR
@@ -99,75 +92,11 @@ public class Musee {
         			int deplacementEST = deplacementJusqueMur(k,l,EST);
         			int deplacementOUEST = deplacementJusqueMur(k,l,OUEST);
         			
-        			for (int m = 1; m < deplacementNORD+1; ++m) {
-        				for (int n = 1; n < m; ++n) {
-        					constraintCapteur.add(model.arithm(getPosition(k-n,l), "=", VIDE));
-        					//LES TRUCS OU TU DOIS FAIRE AND
-        				}
-        				constraintCapteur.add(model.arithm(getPosition(k-m,l), "=", CAPTEUR_SUD));
-                		int next = 1;
-                		Constraint Z = constraintCapteur.get(0);
-                		while (next < constraintCapteur.size()) {
-                        	Z = model.and(Z,constraintCapteur.get(next));
-                        	next+=1;
-                		}
-        				// LE TRUC DU OR
-                		allConstraintCapteurs.add(Z);
-                		constraintCapteur.clear();       		
-        			}
+        			searchCapteurInDirection(deplacementNORD, NORD, k, l);
+        			searchCapteurInDirection(deplacementSUD, SUD, k, l);
+        			searchCapteurInDirection(deplacementEST, EST, k, l);
+        			searchCapteurInDirection(deplacementOUEST, OUEST, k, l);
 
-        			for (int m = 1; m < deplacementSUD+1; ++m) {
-        				for (int n = 1; n < m; ++n) {
-        					constraintCapteur.add(model.arithm(getPosition(k+n,l), "=", VIDE));
-        					//LES TRUCS OU TU DOIS FAIRE AND
-        				}
-        				constraintCapteur.add(model.arithm(getPosition(k+m,l), "=", CAPTEUR_NORD));
-                		int next = 1;
-                		Constraint Z = constraintCapteur.get(0);
-                		while (next < constraintCapteur.size()) {
-                        	Z = model.and(Z,constraintCapteur.get(next));
-                        	next+=1;
-                		}
-        				// LE TRUC DU OR
-                		allConstraintCapteurs.add(Z);
-                		constraintCapteur.clear();       		
-        			}
-
-        			for (int m = 1; m < deplacementEST+1; ++m) {
-        				for (int n = 1; n < m; ++n) {
-        					constraintCapteur.add(model.arithm(getPosition(k,l+n), "=", VIDE));
-        					//LES TRUCS OU TU DOIS FAIRE AND
-        				}
-        				constraintCapteur.add(model.arithm(getPosition(k,l+m), "=", CAPTEUR_OUEST));
-                		int next = 1;
-                		Constraint Z = constraintCapteur.get(0);
-                		while (next < constraintCapteur.size()) {
-                        	Z = model.and(Z,constraintCapteur.get(next));
-                        	next+=1;
-                		}
-        				// LE TRUC DU OR
-                		allConstraintCapteurs.add(Z);
-                		constraintCapteur.clear();       		
-        			}
-
-        			for (int m = 1; m < deplacementOUEST+1; ++m) {
-        				for (int n = 1; n < m; ++n) {
-        					constraintCapteur.add(model.arithm(getPosition(k,l-n), "=", VIDE));
-        					//LES TRUCS OU TU DOIS FAIRE AND
-        				}
-        				constraintCapteur.add(model.arithm(getPosition(k,l-m), "=", CAPTEUR_EST));
-                		int next = 1;
-                		Constraint Z = constraintCapteur.get(0);
-                		while (next < constraintCapteur.size()) {
-                        	Z = model.and(Z,constraintCapteur.get(next));
-                        	next+=1;
-                		}
-        				// LE TRUC DU OR
-                		allConstraintCapteurs.add(Z);
-                		constraintCapteur.clear();       		        				
-        			}
-
-        			
     				// LE TRUC DU OR
         	        if (!allConstraintCapteurs.isEmpty()){
         	    		int second = 1;
@@ -179,31 +108,27 @@ public class Musee {
         	    		X.post();
         	    		allConstraintCapteurs.clear();
           	        }
-
         		}
-        
         	}
         }
-        IntVar[] linesCounter = model.intVarArray(sizeI, 0, sizeJ);
-        for (int lineNb = 0; lineNb < sizeI; ++lineNb) {
-            IntVar[] sommeCapteurs = model.intVarArray(NOMBRE_CAPTEURS, 0, sizeJ);
-        	IntVar[] list = new IntVar[sizeJ];
-        	for (int i = 0; i < sizeJ; ++i) {
-        		list[i] = getPosition(lineNb, i);
-        	}
-        	model.count(CAPTEUR_NORD, list, sommeCapteurs[0]).post();
-        	model.count(CAPTEUR_SUD, list, sommeCapteurs[1]).post();
-        	model.count(CAPTEUR_EST, list, sommeCapteurs[2]).post();
-        	model.count(CAPTEUR_OUEST, list, sommeCapteurs[3]).post();
-        	
-        	model.sum(sommeCapteurs, "=", linesCounter[lineNb]).post();
-        }
-        
-		model.sum(linesCounter, "=", totalCapteur).post();
+    }
+	
+	public void createDicoValuesAndListCapteurs() {
+		dicoValues = new HashMap<>();
+		dicoValues.put(0, "*");
+		dicoValues.put(1, " ");
+		dicoValues.put(2, SUD);
+		dicoValues.put(3, NORD);
+		dicoValues.put(4, OUEST);
+		dicoValues.put(5, EST);
+		listCapteurs.add(CAPTEUR_NORD);
+		listCapteurs.add(CAPTEUR_SUD);
+		listCapteurs.add(CAPTEUR_EST);
+		listCapteurs.add(CAPTEUR_OUEST);
+	}
 
-        int[][] copyMatrix = new int[sizeI][sizeJ];
-        Solver solver = model.getSolver();
-        int copyTotalCapteur;
+	public void solve() {
+        copyMatrix = new int[sizeI][sizeJ];
         while(model.getSolver().solve()) {
             System.out.println("Une solution a été trouvée avec: "+totalCapteur.getValue());
         	System.out.println("En cours d'optimisation ...");
@@ -214,49 +139,98 @@ public class Musee {
             }
             copyTotalCapteur = totalCapteur.getValue();
         }
-        
-        for (int i = 0; i < sizeI; ++i) {
-        	for (int j = 0; j < sizeJ; ++j) {
-        		int value = copyMatrix[i][j];
-        		if (value == 0) {
-        			System.out.print("* ");
-        		}
-        		else if (value == 1) {
-        			System.out.print("  ");
-        		}
-        		else if (value == 2) {
-        			System.out.print("N ");
-        		}
-        		else if (value == 3) {
-        			System.out.print("S ");
-        		}
-        		else if (value == 4) {
-        			System.out.print("E ");
-        		}
-        		else {
-        			System.out.print("O ");
-        		}
+	}
+	
+	public void printSolution() {
+        if (copyTotalCapteur != 0){
+            printMatrix(copyMatrix);
+            System.out.println("Solution optimale trouvée avec : " + copyTotalCapteur + " capteurs.");
+        }
+        else {
+        	System.out.println("Aucune solution trouvée !");
+        }
+	}
+	
+	public void minimizeCapteur() {
+        totalCapteur = model.intVar("Nombre de Capteur",0,totalPositionVide);
+        model.setObjective(Model.MINIMIZE, totalCapteur);
+        IntVar[] linesCounter = model.intVarArray(sizeI, 0, sizeJ);
+        for (int lineNb = 0; lineNb < sizeI; ++lineNb) {
+            IntVar[] sommeCapteurs = model.intVarArray(NOMBRE_CAPTEURS, 0, sizeJ);
+        	IntVar[] list = new IntVar[sizeJ];
+        	for (int i = 0; i < sizeJ; ++i) {
+        		list[i] = getPosition(lineNb, i);
         	}
-        	System.out.println();
+        	
+        	for (int i=0; i<listCapteurs.size() ; ++i) {
+        		model.count(listCapteurs.get(i), list, sommeCapteurs[i]).post();
+        	}
+
+        	model.sum(sommeCapteurs, "=", linesCounter[lineNb]).post();
         }
         
-		
-		
-/*    	IntVar[] totalSumArray = model.intVarArray(size, 0, size);
-    	for (int i = 0; i < size; i++) {
-    		model.sum(matrix[i],"=", totalSumArray[i]).post();
-    	}
-    	IntVar totalSum = model.intVar(0,totalPosition);
-    	model.sum(totalSumArray, "=", totalSum).post();
-    	model.arithm(totalSum, "-", totalCavalier,"=",0).post();
-*/
-    }
+		model.sum(linesCounter, "=", totalCapteur).post();
+	}
 	
+	public void searchCapteurInDirection(int deplacement, String direction, int k, int l) {
+		int ligne=0;
+		int colonne=0;
+		int currentCapteur;
+		if (direction == NORD) {
+			ligne = -1;
+			currentCapteur = CAPTEUR_NORD;
+		}
+		else if (direction == SUD) {
+			ligne = 1;
+			currentCapteur = CAPTEUR_SUD;
+		}
+		else if (direction == EST) {
+			colonne = 1;
+			currentCapteur = CAPTEUR_EST;
+		}
+		else {
+			colonne = -1;
+			currentCapteur = CAPTEUR_OUEST;
+		}
+		
+		for (int m = 1; m < deplacement+1; ++m) {
+			for (int n = 1; n < m; ++n) {
+				constraintCapteur.add(model.arithm(getPosition(k+ligne*n,l+colonne*n), "=", VIDE));
+				//LES TRUCS OU TU DOIS FAIRE AND
+			}
+			constraintCapteur.add(model.arithm(getPosition(k+ligne*m,l+colonne*m), "=", currentCapteur));
+    		int next = 1;
+    		Constraint Z = constraintCapteur.get(0);
+    		while (next < constraintCapteur.size()) {
+            	Z = model.and(Z,constraintCapteur.get(next));
+            	next+=1;
+    		}
+			//LE TRUC DU OR
+    		allConstraintCapteurs.add(Z);
+    		constraintCapteur.clear();       		
+		}
+	}
+
 	public boolean isMur(int i, int j) {
 		return getPositionValue(i,j) == 0;
 	}
 	
-	public int deplacementJusqueMur(int i, int j, char direction) {
+	public void printMatrix(int[][] copyMatrix) {
+        for (int i = 0; i < sizeI; ++i) {
+        	for (int j = 0; j < sizeJ; ++j) {
+        		int value = copyMatrix[i][j];
+        		String elem = getCharFromValue(value);
+        		System.out.print(elem + " ");
+        	}
+            System.out.println();
+        }
+    }		
+	
+	public String getCharFromValue(int value) {
+		return dicoValues.get(value);
+	}
+	
+	public int deplacementJusqueMur(int i, int j, String direction) {
 		int total = 0;
 		int k;
 		boolean notMur = true;
@@ -311,6 +285,21 @@ public class Musee {
 		
 		return total;
 		
+	}
+	
+	public void printMusee() {
+        for (int i = 0; i < sizeI; ++i) {
+        	for (int j = 0; j < matrix.get(i).size(); ++j) {
+        		if (getPositionValue(i,j) == 0) {
+            		System.out.print("* ");
+        		}
+        		else {
+        			System.out.print("  ");
+        		}
+        	}
+        	System.out.println();
+        }
+        System.out.println("Matrice de taille : " + sizeI + " * " + sizeJ);
 	}
 	
 	public IntVar getPosition(int i, int j) {
