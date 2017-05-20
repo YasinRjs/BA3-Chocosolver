@@ -5,10 +5,10 @@ public class Main {
     public static void main(String[] args) {
     	
     	
-    	//ProblemeEchiquier myProbleme = new ProblemeEchiquier(args);
-    	//myProbleme.start();
+    	ProblemeEchiquier myProbleme = new ProblemeEchiquier(args);
+    	myProbleme.start();
     	
-    	//System.out.println();
+    	System.out.println();
     	
 /*    	System.out.print("Veuillez choisir la taille de la matrice : ");
     	Scanner in = new Scanner(System.in);
@@ -19,6 +19,6 @@ public class Main {
     	ProblemeCavalier thisProbleme = new ProblemeCavalier(size,limitTime);
     	thisProbleme.start();
 */
-    	Musee test = new Musee();
+//    	Musee test = new Musee();
     }
 }

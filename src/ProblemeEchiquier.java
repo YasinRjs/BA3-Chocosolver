@@ -3,30 +3,31 @@ import java.util.List;
 
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.constraints.Constraint;
-import org.chocosolver.solver.variables.IntVar;
 
 public class ProblemeEchiquier {
 	// 1. Create a Model
-    public int size = 3;
-    public int totalPosition = size*size;
-    public int totalTour = 2;
-    public int totalFou = 3;
-    public int totalCavalier = 1;
+	private int size = 3;
+    private int totalTour = 2;
+    private int totalFou = 3;
+    private int totalCavalier = 1;
     
-    public String CAVALIER = "C";
-    public String TOUR = "T";
-    public String FOU = "F";
+    private String INDEPENDANCE = "-i";
+    private String DOMINATION = "-d";
+    private String SIZE = "-n";
+    private String argCAVALIER = "-c";
+    private String argTOUR = "-t";
+    private String argFOU = "-f";
+    private Model model = new Model("ProblemeEchiquier");
+    private String chosen = "notOK";
+    private ArrayList<Constraint> constraintPiece = new ArrayList<Constraint>();
+    private ArrayList<Constraint> constraintDeplacements = new ArrayList<Constraint>();
+    private ArrayList<Constraint> constraintPosition = new ArrayList<Constraint>();
+    private ArrayList<Constraint> allConstraintPieces = new ArrayList<Constraint>();
+    private ArrayList<Constraint> allConstraint = new ArrayList<Constraint>();
+    private String VERTICAL = "V";
+    private String HORIZONTAL = "H";
+	List<Piece> allPieces = new ArrayList<Piece>();
     
-    public String INDEPENDANCE = "-i";
-    public String DOMINATION = "-d";
-    public String SIZE = "-n";
-    public String argCAVALIER = "-c";
-    public String argTOUR = "-t";
-    public String argFOU = "-f";
-    public Model model = new Model("ProblemeEchiquier");
-    public String chosen = "notOK";
-    public int nbDeplacementCavalier = 8;
-
     public ProblemeEchiquier(String[] args) {
     	int index;
     	try{
@@ -37,7 +38,6 @@ public class ProblemeEchiquier {
     		chosen = args[index];
     		index = findInStringArray(args, SIZE);
     		size = Integer.parseInt(args[index+1]);
-    		totalPosition = size*size;
     		index = findInStringArray(args, argTOUR);
     		totalTour = Integer.parseInt(args[index+1]);
     		index = findInStringArray(args, argCAVALIER);
@@ -53,6 +53,7 @@ public class ProblemeEchiquier {
     }
     
     public void start() {
+    	createAllPieces();
         if (chosen.equals(INDEPENDANCE)) {
         	doIndependance();
         }
@@ -64,29 +65,143 @@ public class ProblemeEchiquier {
         }
     }
     
-    public List<Piece> createAllPieces() {
-    	List<Piece> allPieces = new ArrayList<Piece>();
-        for (int i = 0; i < totalCavalier; i++) {
+    public void addCavaliers() {
+    	for (int i = 0; i < totalCavalier; i++) {
         	allPieces.add(new Cavalier(model.intVar(0, size-1), model.intVar(0, size-1)));
-        }
+    	}
+    }
+    
+    public void addFous() {
         for (int i = 0; i < totalFou; i++) {
         	allPieces.add(new Fou(model.intVar(0, size-1), model.intVar(0, size-1), size));
         }
+    }
+    
+    public void addTours() {
         for (int i = 0; i < totalTour; i++) {
         	allPieces.add(new Tour(model.intVar(0, size-1), model.intVar(0, size-1), size));
         }
-        return allPieces;
+    }
+    
+    public void createAllPieces() {
+    	addCavaliers();
+    	addFous();
+    	addTours();
     }
     
     public void doDomination() {
-    	
-    	List<Piece> allPieces = createAllPieces();
+    	addDominationConstraints();
+        addSuperpositionConstraint();
+        postFinalConstraints();
+        checkSolutionAndPrint();
+    }
+    public void doIndependance() {
+    	addIndependanceConstraints();
+        checkSolutionAndPrint();
+    }
+    
+    public void addIndependanceConstraints() {
+    	for (int i=0; i<allPieces.size(); ++i) {
+    		for (int j=0; j<allPieces.size(); ++j) {
+    			if (i!=j){
+        			Piece currentPiece = allPieces.get(i);
+        			Piece nextPiece = allPieces.get(j);
+        			for (int index = 0; index < currentPiece.getDeplacementI().length; ++index) {
+    					model.or(model.arithm(currentPiece.getI(), "-", nextPiece.getI(), "!=", currentPiece.getDeplacementI()[index]), model.arithm(currentPiece.getJ(), "-", nextPiece.getJ(), "!=", currentPiece.getDeplacementJ()[index])).post();
+        			}
+    			}
+    		}
+    	}
+    }
+    
+    public void addConstraintDeplacements() {
+		int next = 1;
+		Constraint D = constraintPosition.get(0);
+		while (next < constraintPosition.size()) {
+			D = model.and(D,constraintPosition.get(next));
+			++next;
+		}
+		constraintDeplacements.add(D);
+		constraintPosition.clear();
+    }
+    
+    public void addConstraintPosition(int p, int k, int l, int i, String direction) {
+    	int ligne = 0;
+    	int colonne = 0;
+    	if (direction == VERTICAL) {
+    		ligne = 1;
+    	}
+    	else {
+    		colonne = 1;
+    	}
+		for (int q = 0; q < allPieces.size(); ++q) { // Toutes les autres pièces ne sont pas dans la case
+			if (p != q) {
+				Piece nextPiece = allPieces.get(q);
+				Constraint b = model.and(model.arithm(nextPiece.getI(), "!=", k+ligne*i),model.arithm(nextPiece.getI(), "!=", l+colonne*i));
+				constraintPosition.add(b);
+			}
+		}
+		addConstraintDeplacements();
+    }
+    
+    public void addConstraintPiece() {
+		int next = 1;
+		Constraint P = constraintDeplacements.get(0);
+		while (next < constraintDeplacements.size()) {
+			P = model.and(P, constraintDeplacements.get(next));
+			++next;
+		}
+		constraintPiece.add(P);
+		constraintDeplacements.clear();
+    }
+    
+    public void addConstraintAllPieces() {
+		int next = 1;
+		Constraint Z = constraintPiece.get(0);
+		while (next < constraintPiece.size()) {
+        	Z = model.or(Z,constraintPiece.get(next));
+        	next+=1;
+		}
+		allConstraintPieces.add(Z);
+		constraintPiece.clear();
+    }
+    
+    public void regroupAllConstraints() {
+		if (!allConstraintPieces.isEmpty()) {
+    		int suivant = 1;
+    		Constraint W = allConstraintPieces.get(0);
+    		while (suivant < allConstraintPieces.size()) {
+            	W = model.or(W,allConstraintPieces.get(suivant));
+            	suivant+=1;
+    		}
+    		allConstraint.add(W); 	
+    		allConstraintPieces.clear();
+		}
+    }
+    
+    public void addSuperpositionConstraint() {
+        for (int i=0; i<allPieces.size(); ++i) {
+        	for (int j=i+1; j<allPieces.size(); ++j) {
+        		Piece currentPiece = allPieces.get(i);
+        		Piece nextPiece = allPieces.get(j);
+        		model.or(model.arithm(currentPiece.getI() ,"!=", nextPiece.getI()), model.arithm(currentPiece.getJ(), "!=", nextPiece.getJ())).post();
+        	}
+        }
+    }
 
-        ArrayList<Constraint> constraintPiece = new ArrayList<Constraint>();
-        ArrayList<Constraint> constraintDeplacements = new ArrayList<Constraint>();
-        ArrayList<Constraint> constraintPosition = new ArrayList<Constraint>();
-        ArrayList<Constraint> allConstraintPieces = new ArrayList<Constraint>();
-        ArrayList<Constraint> allConstraint = new ArrayList<Constraint>();
+    public void postFinalConstraints() {
+        if (!allConstraint.isEmpty()){
+    		int second = 1;
+    		Constraint X = allConstraint.get(0);
+    		while (second < allConstraint.size()) {
+            	X = model.and(X,allConstraint.get(second));
+            	second+=1;
+    		}
+    		X.post();
+        }
+    }
+    
+    public void addDominationConstraints() {
         for (int k=0; k<size; ++k) {
         	for (int l=0; l<size; ++l) {
         		for (int p = 0; p < allPieces.size(); ++p) {
@@ -100,161 +215,33 @@ public class ProblemeEchiquier {
         					if (deplacementI == 0 || deplacementJ ==0) {	// DEPLACEMENT LIGNE DROITE
         						if (deplacementI > 1) { // on va vers le bas
         							for (int i = 1; i < deplacementI; ++i){		// Différence de position
-        								for (int q = 0; q < allPieces.size(); ++q) { // Toutes les autres pièces ne sont pas dans la case
-        									if (p != q) {
-        										Piece nextPiece = allPieces.get(q);
-        										Constraint b = model.or(model.arithm(nextPiece.getI(), "!=", k+i),model.arithm(nextPiece.getI(), "!=", l));
-        										constraintPosition.add(b);
-        									}
-        								}
-        								int next = 1;
-        								Constraint D = constraintPosition.get(0);
-        								while (next < constraintPosition.size()) {
-        									D = model.or(D,constraintPosition.get(next));
-        									++next;
-        								}
-        								constraintDeplacements.add(D);
-        								constraintPosition.clear();
+        								addConstraintPosition(p, k, l, i, VERTICAL);
         							}
         						}
-        						
         						if (deplacementI < -1) { // on va vers le haut
         							for (int i = -1; i > deplacementI; --i){	
-        								System.out.println(i);// Différence de position
-        								for (int q = 0; q < allPieces.size(); ++q) { // Toutes les autres pièces ne sont pas dans la case
-        									if (p != q) {
-        										Piece nextPiece = allPieces.get(q);
-        										Constraint b = model.or(model.arithm(nextPiece.getI(), "!=", k+i),model.arithm(nextPiece.getI(), "!=", l));
-        										constraintPosition.add(b);
-        									}
-        								}
-        								int next = 1;
-        								Constraint D = constraintPosition.get(0);
-        								while (next < constraintPosition.size()) {
-        									D = model.or(D,constraintPosition.get(next));
-        									++next;
-        								}
-        								constraintDeplacements.add(D);
-        								constraintPosition.clear();
+        								addConstraintPosition(p, k, l, i, VERTICAL);
         							}
         						}
-        						
         						if (deplacementJ > 1) { // on va vers la droite
         							for (int j = 1; j < deplacementJ; ++j){		// Différence de position
-        								for (int q = 0; q < allPieces.size(); ++q) { // Toutes les autres pièces ne sont pas dans la case
-        									if (p != q) {
-        										Piece nextPiece = allPieces.get(q);
-        										Constraint b = model.or(model.arithm(nextPiece.getI(), "!=", k),model.arithm(nextPiece.getI(), "!=", l+j));
-        										constraintPosition.add(b);
-        									}
-        								}
-        								int next = 1;
-        								Constraint D = constraintPosition.get(0);
-        								while (next < constraintPosition.size()) {
-        									D = model.or(D,constraintPosition.get(next));
-        									++next;
-        								}
-        								constraintDeplacements.add(D);
-        								constraintPosition.clear();
+        								addConstraintPosition(p, k, l, j, HORIZONTAL);
         							}
         						}
-        						
         						if (deplacementJ < -1) { // on va vers la gauche
         							for (int j = -1; j > deplacementJ; --j){		// Différence de position
-        								for (int q = 0; q < allPieces.size(); ++q) { // Toutes les autres pièces ne sont pas dans la case
-        									if (p != q) {
-        										Piece nextPiece = allPieces.get(q);
-        										Constraint b = model.or(model.arithm(nextPiece.getI(), "!=", k),model.arithm(nextPiece.getI(), "!=", l+j));
-        										constraintPosition.add(b);
-        									}
-        								}
-        								int next = 1;
-        								Constraint D = constraintPosition.get(0);
-        								while (next < constraintPosition.size()) {
-        									D = model.or(D,constraintPosition.get(next));
-        									++next;
-        								}
-        								constraintDeplacements.add(D);
-        								constraintPosition.clear();
+            							addConstraintPosition(p, k, l, j, HORIZONTAL);
         							}
         						}    						
-			      						      						
         					}
-        					int next = 1;
-        					Constraint P = constraintDeplacements.get(0);
-        					while (next < constraintDeplacements.size()) {
-        						P = model.and(P, constraintDeplacements.get(next));
-        						++next;
-        					}
-        					constraintPiece.add(P);
-        					constraintDeplacements.clear();
+        					addConstraintPiece();
         				}
-    					
-    				//	constraintPiece.add(a);
         			}
-            		int next = 1;
-            		Constraint Z = constraintPiece.get(0);
-            		while (next < constraintPiece.size()) {
-                    	Z = model.or(Z,constraintPiece.get(next));
-                    	next+=1;
-            		}
-            		allConstraintPieces.add(Z);
-            		constraintPiece.clear();
+        			addConstraintAllPieces();
         		}
-        		if (!allConstraintPieces.isEmpty()) {
-            		int suivant = 1;
-            		Constraint W = allConstraintPieces.get(0);
-            		while (suivant < allConstraintPieces.size()) {
-                    	W = model.or(W,allConstraintPieces.get(suivant));
-                    	suivant+=1;
-            		}
-            		allConstraint.add(W); 	
-            		allConstraintPieces.clear();
-        		}
+        		regroupAllConstraints();
         	}
         }
-        for (int i=0; i<allPieces.size(); ++i) {
-        	for (int j=i+1; j<allPieces.size(); ++j) {
-        		Piece currentPiece = allPieces.get(i);
-        		Piece nextPiece = allPieces.get(j);
-        		model.or(model.arithm(currentPiece.getI() ,"!=", nextPiece.getI()), model.arithm(currentPiece.getJ(), "!=", nextPiece.getJ())).post();
-        	}
-        }
-        if (!allConstraint.isEmpty()){
-        	System.out.println("ici");
-    		int second = 1;
-    		Constraint X = allConstraint.get(0);
-    		while (second < allConstraint.size()) {
-            	X = model.and(X,allConstraint.get(second));
-            	second+=1;
-    		}
-    		X.post();
-        }
-        
-        checkSolutionAndPrint(allPieces);
-    }
-    
-    public void doIndependance() {
-
-    	List<Piece> allPieces = createAllPieces();
-    	
-    	for (int i=0; i<allPieces.size(); ++i) {
-    		for (int j=0; j<allPieces.size(); ++j) {
-    			if (i!=j){
-        			Piece currentPiece = allPieces.get(i);
-        			Piece nextPiece = allPieces.get(j);
-        			for (int index = 0; index < currentPiece.getDeplacementI().length; ++index) {
-    					model.or(model.arithm(currentPiece.getI(), "-", nextPiece.getI(), "!=", currentPiece.getDeplacementI()[index]), model.arithm(currentPiece.getJ(), "-", nextPiece.getJ(), "!=", currentPiece.getDeplacementJ()[index])).post();
-        			}
-    			}
-    		}
-    	}
-		System.out.println("Start");
-		while (model.getSolver().solve()){
-			System.out.println("VOICI UNE SOLUTION POSSIBLE : ");
-			printMatrix(allPieces);
-		}
-		System.out.println("Stop");    	
     }
     
     public boolean checkRange(int posI, int posJ) {
@@ -273,7 +260,7 @@ public class ProblemeEchiquier {
 	 * @param fou
 	 * @param tour
 	 */
-    public void printMatrix(List<Piece> allPieces) {
+    public void printMatrix() {
     	String[][] matrix = new String[size][size];
     	for (int i=0; i<size; i++) {
     		for (int j=0; j<size; j++) {
@@ -294,11 +281,11 @@ public class ProblemeEchiquier {
     	}
     }
     
-    public void checkSolutionAndPrint(List<Piece> allPieces) {
+    public void checkSolutionAndPrint() {
         System.out.println("Start");
 		while (model.getSolver().solve()){
 			System.out.println("VOICI UNE SOLUTION POSSIBLE : ");
-			printMatrix(allPieces);
+			printMatrix();
 		}
 		System.out.println("Stop");
     }
