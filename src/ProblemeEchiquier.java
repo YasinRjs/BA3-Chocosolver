@@ -83,14 +83,114 @@ public class ProblemeEchiquier {
     	List<Piece> allPieces = createAllPieces();
 
         ArrayList<Constraint> constraintPiece = new ArrayList<Constraint>();
+        ArrayList<Constraint> constraintDeplacements = new ArrayList<Constraint>();
+        ArrayList<Constraint> constraintPosition = new ArrayList<Constraint>();
         ArrayList<Constraint> allConstraintPieces = new ArrayList<Constraint>();
         ArrayList<Constraint> allConstraint = new ArrayList<Constraint>();
         for (int k=0; k<size; ++k) {
         	for (int l=0; l<size; ++l) {
-        		for (Piece currentPiece : allPieces) {
+        		for (int p = 0; p < allPieces.size(); ++p) {
+       				Piece currentPiece = allPieces.get(p);	        				
         			for (int index = 0; index < currentPiece.getDeplacementI().length; ++index) {
-    					Constraint a = model.and(model.arithm(currentPiece.getI(), "=", currentPiece.getDeplacementI()[index]+k), model.arithm(currentPiece.getJ(), "=", currentPiece.getDeplacementJ()[index]+l));
-    					constraintPiece.add(a);
+        				int deplacementI = currentPiece.getDeplacementI()[index];
+        				int deplacementJ = currentPiece.getDeplacementJ()[index];
+        				if (checkRange(k+deplacementI,l+deplacementJ)) {
+        					Constraint a = model.and(model.arithm(currentPiece.getI(), "=", deplacementI+k), model.arithm(currentPiece.getJ(), "=", deplacementJ+l));
+        					constraintDeplacements.add(a);
+        					if (deplacementI == 0 || deplacementJ ==0) {	// DEPLACEMENT LIGNE DROITE
+        						if (deplacementI > 1) { // on va vers le bas
+        							for (int i = 1; i < deplacementI; ++i){		// Différence de position
+        								for (int q = 0; q < allPieces.size(); ++q) { // Toutes les autres pièces ne sont pas dans la case
+        									if (p != q) {
+        										Piece nextPiece = allPieces.get(q);
+        										Constraint b = model.or(model.arithm(nextPiece.getI(), "!=", k+i),model.arithm(nextPiece.getI(), "!=", l));
+        										constraintPosition.add(b);
+        									}
+        								}
+        								int next = 1;
+        								Constraint D = constraintPosition.get(0);
+        								while (next < constraintPosition.size()) {
+        									D = model.or(D,constraintPosition.get(next));
+        									++next;
+        								}
+        								constraintDeplacements.add(D);
+        								constraintPosition.clear();
+        							}
+        						}
+        						
+        						if (deplacementI < -1) { // on va vers le haut
+        							for (int i = -1; i > deplacementI; --i){	
+        								System.out.println(i);// Différence de position
+        								for (int q = 0; q < allPieces.size(); ++q) { // Toutes les autres pièces ne sont pas dans la case
+        									if (p != q) {
+        										Piece nextPiece = allPieces.get(q);
+        										Constraint b = model.or(model.arithm(nextPiece.getI(), "!=", k+i),model.arithm(nextPiece.getI(), "!=", l));
+        										constraintPosition.add(b);
+        									}
+        								}
+        								int next = 1;
+        								Constraint D = constraintPosition.get(0);
+        								while (next < constraintPosition.size()) {
+        									D = model.or(D,constraintPosition.get(next));
+        									++next;
+        								}
+        								constraintDeplacements.add(D);
+        								constraintPosition.clear();
+        							}
+        						}
+        						
+        						if (deplacementJ > 1) { // on va vers la droite
+        							for (int j = 1; j < deplacementJ; ++j){		// Différence de position
+        								for (int q = 0; q < allPieces.size(); ++q) { // Toutes les autres pièces ne sont pas dans la case
+        									if (p != q) {
+        										Piece nextPiece = allPieces.get(q);
+        										Constraint b = model.or(model.arithm(nextPiece.getI(), "!=", k),model.arithm(nextPiece.getI(), "!=", l+j));
+        										constraintPosition.add(b);
+        									}
+        								}
+        								int next = 1;
+        								Constraint D = constraintPosition.get(0);
+        								while (next < constraintPosition.size()) {
+        									D = model.or(D,constraintPosition.get(next));
+        									++next;
+        								}
+        								constraintDeplacements.add(D);
+        								constraintPosition.clear();
+        							}
+        						}
+        						
+        						if (deplacementJ < -1) { // on va vers la gauche
+        							for (int j = -1; j > deplacementJ; --j){		// Différence de position
+        								for (int q = 0; q < allPieces.size(); ++q) { // Toutes les autres pièces ne sont pas dans la case
+        									if (p != q) {
+        										Piece nextPiece = allPieces.get(q);
+        										Constraint b = model.or(model.arithm(nextPiece.getI(), "!=", k),model.arithm(nextPiece.getI(), "!=", l+j));
+        										constraintPosition.add(b);
+        									}
+        								}
+        								int next = 1;
+        								Constraint D = constraintPosition.get(0);
+        								while (next < constraintPosition.size()) {
+        									D = model.or(D,constraintPosition.get(next));
+        									++next;
+        								}
+        								constraintDeplacements.add(D);
+        								constraintPosition.clear();
+        							}
+        						}    						
+			      						      						
+        					}
+        					int next = 1;
+        					Constraint P = constraintDeplacements.get(0);
+        					while (next < constraintDeplacements.size()) {
+        						P = model.and(P, constraintDeplacements.get(next));
+        						++next;
+        					}
+        					constraintPiece.add(P);
+        					constraintDeplacements.clear();
+        				}
+    					
+    				//	constraintPiece.add(a);
         			}
             		int next = 1;
             		Constraint Z = constraintPiece.get(0);
@@ -155,6 +255,10 @@ public class ProblemeEchiquier {
 			printMatrix(allPieces);
 		}
 		System.out.println("Stop");    	
+    }
+    
+    public boolean checkRange(int posI, int posJ) {
+    	return (posI < size && posI >= 0 && posJ < size && posJ >= 0);
     }
     
 //---------------------------------------------------------------------------
