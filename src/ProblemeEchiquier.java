@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.constraints.Constraint;
@@ -17,6 +18,8 @@ public class ProblemeEchiquier {
     private String argCAVALIER = "-c";
     private String argTOUR = "-t";
     private String argFOU = "-f";
+    private String argCustom = "-custom";
+    private boolean custom = false;
     private Model model = new Model("ProblemeEchiquier");
     private String chosen = "notOK";
     private ArrayList<Constraint> constraintPiece = new ArrayList<Constraint>();
@@ -26,32 +29,52 @@ public class ProblemeEchiquier {
     private ArrayList<Constraint> allConstraint = new ArrayList<Constraint>();
 	List<Piece> allPieces = new ArrayList<Piece>();
     
-    public ProblemeEchiquier(String[] args) {
-    	int index;
-    	try{
-    		index = findInStringArray(args, DOMINATION);
-    		if (index == 100) {
-    			index = findInStringArray(args, INDEPENDANCE);
-    		}
-    		chosen = args[index];
-    		index = findInStringArray(args, SIZE);
-    		size = Integer.parseInt(args[index+1]);
-    		index = findInStringArray(args, argTOUR);
-    		totalTour = Integer.parseInt(args[index+1]);
-    		index = findInStringArray(args, argCAVALIER);
-    		totalCavalier = Integer.parseInt(args[index+1]);
-    		index = findInStringArray(args, argFOU);
-    		totalFou = Integer.parseInt(args[index+1]);
-    	}
-    	catch (Exception e) {
-    		System.out.println("Erreur dans les arguments. ");
-    		System.exit(1);
-    	}
+	
+	
 
+	
+    public ProblemeEchiquier() {
+    	parseArguments();
+    	start();
+    }
+    
+    public void parseArguments() {
+    	int index;
+    	boolean finished = false;
+    	while (!finished) {
+    		System.out.println("Veuillez entrer vos arguments comme demandé dans le PDF:");
+    		Scanner in = new Scanner(System.in);
+    		String[] args = in.nextLine().split(" ");
+	    	try{
+	    		index = findInStringArray(args, DOMINATION);
+	    		if (index == 100) {
+	    			index = findInStringArray(args, INDEPENDANCE);
+	    		}
+	    		chosen = args[index];
+	    		index = findInStringArray(args, SIZE);
+	    		size = Integer.parseInt(args[index+1]);
+	    		index = findInStringArray(args, argTOUR);
+	    		totalTour = Integer.parseInt(args[index+1]);
+	    		index = findInStringArray(args, argCAVALIER);
+	    		totalCavalier = Integer.parseInt(args[index+1]);
+	    		index = findInStringArray(args, argFOU);
+	    		totalFou = Integer.parseInt(args[index+1]);
+	    		index = findInStringArray(args, argCustom);
+	    		if (index != 100) {
+	    			custom = true;
+	    		}
+	    		finished = true;
+	    		
+	    	}
+	    	catch (Exception e) {
+	    		System.out.println("Erreur dans les arguments. ");
+	    	}
+    	}
     }
     
     public void start() {
     	createAllPieces();
+    	
         if (chosen.equals(INDEPENDANCE)) {
         	doIndependance();
         }
@@ -85,6 +108,52 @@ public class ProblemeEchiquier {
     	addCavaliers();
     	addFous();
     	addTours();
+    	if (custom) {
+    		addCustomPieces();
+    	}
+    }
+    
+    public void addCustomPieces() {
+    	
+    	boolean stop = false;
+    	
+    	while (!stop){
+        	System.out.print("Quelles lettre voulez-vous donner: ");
+        	Scanner in = new Scanner(System.in);
+        	String letter = Character.toString(in.next().charAt(0));
+        	System.out.print("De combien de cases peut-il attaquer en ligne droite: ");
+        	int droit = in.nextInt();
+        	System.out.print("De combien de cases peut-il attaquer en diagonale: ");
+        	int diagonale = in.nextInt();
+        	String answer = "";
+        	while (!answer.toLowerCase().equals("oui") && !answer.toLowerCase().equals("non")) {
+            	System.out.print("Peut-il attaquer en L (oui ou non): ");
+            	answer = in.next();
+        	}
+        	boolean L = answer.toLowerCase().equals("oui") ? true : false;
+        	System.out.print("Combien de pièces de ce type voulez-vous: ");
+        	int quantite = in.nextInt();
+        	
+        	droit = droit > size ? size-1 : droit;
+        	droit = droit < 0 ? 0 : droit;
+        	diagonale = diagonale > size ? size-1 : diagonale;
+        	diagonale = diagonale < 0 ? 0 : diagonale;
+        	for (int i = 0; i < quantite; ++i) {
+        		PieceQuelconque pieceQuelconque = new PieceQuelconque(model.intVar(0, size-1), model.intVar(0, size-1),letter,diagonale,droit,L);
+        		allPieces.add(pieceQuelconque);
+        	}
+        	System.out.println("=======================");
+        	System.out.println("Piece " + letter + " créée avec succès !");
+        	System.out.println("=======================");
+        	answer = "";
+        	while (!answer.toLowerCase().equals("oui") && !answer.toLowerCase().equals("non")) {
+            	System.out.print("Voulez-vous encore rajouter une pièce (oui ou non): ");
+            	answer = in.next();
+        	}
+        	stop = answer.toLowerCase().equals("non");
+    	}
+    	
+
     }
     
     public void doDomination() {
@@ -128,7 +197,7 @@ public class ProblemeEchiquier {
 		for (int q = 0; q < allPieces.size(); ++q) { // Toutes les autres pièces ne sont pas dans la case
 			if (p != q) {
 				Piece nextPiece = allPieces.get(q);
-				Constraint b = model.and(model.arithm(nextPiece.getI(), "!=", newPosI),model.arithm(nextPiece.getI(), "!=", newPosI));
+				Constraint b = model.or(model.arithm(nextPiece.getI(), "!=", newPosI),model.arithm(nextPiece.getI(), "!=", newPosI));
 				constraintPosition.add(b);
 			}
 		}
@@ -200,7 +269,7 @@ public class ProblemeEchiquier {
         
         }
         else if (deplacementI < -1 && deplacementJ > 1) { // EN HAUT A DROITE
-            for (int i = 1; i > deplacementJ; ++i) {
+            for (int i = 1; i < deplacementJ; ++i) {
             	addConstraintPosition(p, k-i, l+i);
             }                                
         }                                
@@ -290,13 +359,13 @@ public class ProblemeEchiquier {
     	String[][] matrix = new String[size][size];
     	for (int i=0; i<size; i++) {
     		for (int j=0; j<size; j++) {
-    			matrix[i][j] = "--";
+    			matrix[i][j] = "*";
     		}
     	}
 
     	for (int i=0; i<allPieces.size(); ++i) {
     		Piece currentPiece = allPieces.get(i);
-    		matrix[currentPiece.getI().getValue()][currentPiece.getJ().getValue()] = currentPiece.getLetter()+(i+1);
+    		matrix[currentPiece.getI().getValue()][currentPiece.getJ().getValue()] = currentPiece.getLetter();
     	}
     	
     	for (int i=0; i<size; i++) {
@@ -308,12 +377,14 @@ public class ProblemeEchiquier {
     }
     
     public void checkSolutionAndPrint() {
-        System.out.println("Start");
-		while (model.getSolver().solve()){
-			System.out.println("VOICI UNE SOLUTION POSSIBLE : ");
+    	System.out.println("Début de la résolution ... ");
+		if (model.getSolver().solve()){
+			System.out.println("Voici une solution possible : ");
 			printMatrix();
 		}
-		System.out.println("Stop");
+		else {
+			System.out.println("Nous n'avons pas trouvé de solution.");
+		}
     }
 
     public int findInStringArray(String[] array, String value) {

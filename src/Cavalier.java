@@ -9,11 +9,11 @@ public class Cavalier extends Piece {
 	private static final boolean L = true;
 	private static final String letter = "C";
 
-	private static int[] deplacementCavalierI = null;
-	private static int[] deplacementCavalierJ = null;
+	private static int[] deplacementI = null;
+	private static int[] deplacementJ = null;
 	
 	Cavalier(){
-		if (deplacementCavalierI == null) {
+		if (deplacementI == null) {
 			setDeplacement(diagonale, droite, L);
 		}
 	}
@@ -21,19 +21,19 @@ public class Cavalier extends Piece {
 	Cavalier(IntVar valuesI, IntVar valuesJ) {
 		this.positionI = valuesI;
 		this.positionJ = valuesJ;
-		if (deplacementCavalierI == null) {
+		if (deplacementI == null) {
 			setDeplacement(diagonale, droite, L);
 		}
 	}
 	
 	@Override
 	public int[] getDeplacementI() {
-		return deplacementCavalierI;
+		return deplacementI;
 	}
 	
 	@Override
 	public int[] getDeplacementJ() {
-		return deplacementCavalierJ;
+		return deplacementJ;
 	}
 	@Override
 	public String getLetter() {
@@ -43,8 +43,8 @@ public class Cavalier extends Piece {
 	public void setDeplacement(int diagonale, int droite, boolean L) {
 		List<int[]> allDeplacement = createDeplacement(diagonale, droite, L);
 		
-		deplacementCavalierI = allDeplacement.get(0);
-		deplacementCavalierJ = allDeplacement.get(1);
+		deplacementI = allDeplacement.get(0);
+		deplacementJ = allDeplacement.get(1);
 		
 	}
 }

@@ -40,8 +40,8 @@ public class Musee {
     ArrayList<Constraint> constraintCapteur = new ArrayList<Constraint>();
     ArrayList<Constraint> allConstraintCapteurs = new ArrayList<Constraint>();
 	
-	Musee(){
-		parseMuseeFile();
+	Musee(String file){
+		parseMuseeFile(file);
 		printMusee();
 		createDicoValuesAndListCapteurs();
         addConstraints();
@@ -50,8 +50,8 @@ public class Musee {
         printSolution();
 	}
 
-	public void parseMuseeFile() {
-		File file = new File("/home/yarslan/Bureau/Workspace/InfoFond/src/Musee.txt");
+	public void parseMuseeFile(String fileName) {
+		File file = new File(fileName);
 		try {
 			Scanner input = new Scanner(file);
 			while (input.hasNext()) {

@@ -1,4 +1,6 @@
 import java.util.ArrayList;
+import java.util.Scanner;
+
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solver;
 import org.chocosolver.solver.constraints.Constraint;
@@ -13,10 +15,15 @@ public class ProblemeCavalier {
     private int copyTotalCavalier;
     private String limitTime;
 	
+    
+    
+
+    
 	ProblemeCavalier(int size, String limitTime) {
 		this.size = size;
 		totalPosition = size*size;
 		this.limitTime = limitTime;
+		start();
 	}
 	
 	public void start() {
